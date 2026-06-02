@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Container, Grid, Typography, Button, Box } from "@mui/material";
+import {useState} from "react";
+import {Container, Grid, Typography, Button, Box} from "@mui/material";
+import {useAuth} from "../context/AuthContext";
 // Importamos los componentes hijos
 import PostCard from "../components/PostCard";
 import ModalFormularioPost from "../components/modals/ModalFormularioPost";
@@ -11,7 +12,9 @@ const estadoInicialPost = {
     img: ''
 };
 
-const ListaDePosts = ({ posts, setPosts, restaurarBlog }) => {
+const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
+
+    const {usuario} = useAuth();
 
     // Estados para el Modal y el formulario
     const [modalAbierto, setModalAbierto] = useState(false);
@@ -38,7 +41,7 @@ const ListaDePosts = ({ posts, setPosts, restaurarBlog }) => {
     };
 
     const handlePrepararEdicion = (post) => {
-        setNuevoPost({ titulo: post.titulo, descripcion: post.descripcion, img: post.img });
+        setNuevoPost({titulo: post.titulo, descripcion: post.descripcion, img: post.img});
         setEditandoId(post.id);
         setModalAbierto(true);
     };
@@ -53,7 +56,7 @@ const ListaDePosts = ({ posts, setPosts, restaurarBlog }) => {
     const handleGuardarPost = () => {
         if (editandoId) {
             // Lógica de ACTUALIZAR (Update)
-            setPosts(posts.map(post => post.id === editandoId ? { ...post, ...nuevoPost } : post));
+            setPosts(posts.map(post => post.id === editandoId ? {...post, ...nuevoPost} : post));
         } else {
             // Lógica de CREAR (Create)
             const postCreado = {
@@ -90,17 +93,19 @@ const ListaDePosts = ({ posts, setPosts, restaurarBlog }) => {
 
     return (
         // Container centra el contenido y le da márgenes a los lados
-        <Container sx={{ paddingY: 4 }}>
+        <Container sx={{paddingY: 4}}>
             {/* Contenedor Flex para alinear el título y el bótón en la misma linea */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4}}>
                 <Typography variant="h3" component="h1" gutterBottom align="center">
                     Últimos Articulos
                 </Typography>
 
                 {/* Botón que respeta el color "primary" definido en el ThemeProvider */}
-                <Button variant="contained" color="primary" onClick={handleAbrirModalCrear}>
-                    + Crear Nuevo Post
-                </Button>
+                {usuario && (
+                    <Button variant="contained" color="primary" onClick={handleAbrirModalCrear}>
+                        + Crear Nuevo Post
+                    </Button>
+                )}
             </Box>
 
             {/* Grid container es la fila */}
@@ -119,11 +124,13 @@ const ListaDePosts = ({ posts, setPosts, restaurarBlog }) => {
             </Grid>
 
             {/* Botón para restablecer el blog */}
-            <Box sx={{ mt: 6, mb: 2, textAlign: 'center' }}>
-                <Button variant="outlined" color="error" onClick={() => setDialogoRestaurarAbierto(true)}>
-                    Restablecer Blog
-                </Button>
-            </Box>
+            {usuario && (
+                <Box sx={{mt: 6, mb: 2, textAlign: 'center'}}>
+                    <Button variant="outlined" color="error" onClick={() => setDialogoRestaurarAbierto(true)}>
+                        Restablecer Blog
+                    </Button>
+                </Box>
+            )}
 
             {/* Invocación de Modales Componentizados */}
             <ModalFormularioPost

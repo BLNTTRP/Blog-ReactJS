@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import {useState} from "react";
+import {Link} from "react-router-dom";
+import {useAuth} from "../context/AuthContext";
 import {
     Card, CardHeader, CardMedia, CardContent, CardActions, Typography, IconButton,
     Button, Menu, MenuItem
 } from "@mui/material";
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 
-const PostCard = ({ post, onEdit, onDelete }) => {
+const PostCard = ({post, onEdit, onDelete}) => {
+    const {usuario} = useAuth();
+
     const [anchorEl, setAnchorEl] = useState(null);
     const menuAbierto = Boolean(anchorEl);
 
@@ -34,9 +37,11 @@ const PostCard = ({ post, onEdit, onDelete }) => {
             {/* CardHeader nos permite ubicar fácilmente el título y un botón de accion (opciones) */}
             <CardHeader
                 action={
-                    <IconButton aria-label="opciones" onClick={(e) => handleAbrirMenu(e, post)}>
-                        <MoreVertIcon/>
-                    </IconButton>
+                    usuario ? (
+                        <IconButton aria-label="opciones" onClick={(e) => handleAbrirMenu(e)}>
+                            <MoreVertIcon/>
+                        </IconButton>
+                    ) : null
                 }
                 title={
                     <Typography variant="h5" component="h2" noWrap>
@@ -84,7 +89,7 @@ const PostCard = ({ post, onEdit, onDelete }) => {
                 </MenuItem>
 
                 {/* Click para que abra la confirmación */}
-                <MenuItem onClick={handlePrepararEliminacion} sx={{ color: 'error.main' }}>
+                <MenuItem onClick={handlePrepararEliminacion} sx={{color: 'error.main'}}>
                     Eliminar
                 </MenuItem>
             </Menu>
