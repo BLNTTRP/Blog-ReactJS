@@ -1,52 +1,27 @@
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
-import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-// Importamos los Layouts
+import { ThemeProvider, CssBaseline } from "@mui/material";
+
+// Importamos las configuraciones externas
+import { temaBlog } from "./theme/theme";
+import { postsDeFabrica } from "./data/postsIniciales";
+
+// Importamos Layouts y Páginas
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-// Importamos las Páginas
 import Inicio from "./pages/Inicio";
 import ListaDePosts from "./pages/ListaDePosts";
 import DetalleDePost from "./pages/DetalleDePost";
 import AcercaDe from "./pages/AcercaDe";
 
-// Creamos nuestro tema personalizado
-const temaBlog = createTheme({
-    palette: {
-        primary: {
-            main: '#808000', // Verde oliva
-        },
-        secondary: {
-            main: '#333333', // Gris oscuro
-        },
-        background: {
-            default: '#f4f5f7' // Fondo general un poco más gris
-        }
-    },
-    typography: {
-        fontFamily: 'Arial, sans-serif',
-    },
-});
-
-// Extraemos los posts por defecto (estado de fábrica) a una constante
-const postsDeFabrica = [
-        { id: 1, titulo: "Aprende React", descripcion: "Guia paso a paso...",
-        img: "https://picsum.photos/400/200?random=1" },
-        { id: 2, titulo: "Hooks a fondo", descripcion: "Entendiendo useEffect...",
-        img: "https://picsum.photos/400/200?random=2"},
-        { id: 3, titulo: "Material UI", descripcion: "Estilos rápidos...",
-        img: "https://picsum.photos/400/200?random=3"},
-    ]
 
 const App = () => {
     // Inicialización "perezosa" (lazy initialization) del estado
     const [posts, setPosts] = useState(() => {
         const postsGuardados = localStorage.getItem('blog_posts');
-        // Si hay datos en localStorage, los parseamos y los usamos
         if (postsGuardados) {
             return JSON.parse(postsGuardados);
         }
-        // Si no hay datos, usamos los posts de fabrica
         return postsDeFabrica;
     });
 
