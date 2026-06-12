@@ -67,9 +67,21 @@ const Header = () => {
                             </Button>
                         </>
                     ) : (
-                        <Button color="inherit" component={Link} to="/login" sx={{ ml: 2, fontWeight: 'bold' }}>
-                            Iniciar Sesión
-                        </Button>
+                        <>
+                            <Button color="inherit" component={Link} to="/login" sx={{ ml: 2, fontWeight: 'bold' }}>
+                                Iniciar Sesión
+                            </Button>
+                            {/* BOTÓN DE REGISTRO */}
+                            <Button
+                                color="inherit"
+                                component={Link}
+                                to="/registro"
+                                variant="outlined"
+                                sx={{ ml: 1, fontWeight: 'bold', borderColor: 'white' }}
+                            >
+                                Registrarse
+                            </Button>
+                        </>
                     )}
                 </Box>
             </Toolbar>

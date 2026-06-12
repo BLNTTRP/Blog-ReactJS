@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState, memo} from "react";
 import {Link} from "react-router-dom";
 import {useAuth} from "../context/AuthContext";
 import {
@@ -37,7 +37,7 @@ const PostCard = ({post, onEdit, onDelete}) => {
             {/* CardHeader nos permite ubicar fácilmente el título y un botón de accion (opciones) */}
             <CardHeader
                 action={
-                    usuario ? (
+                    usuario?.rol === 'admin' ? (
                         <IconButton aria-label="opciones" onClick={(e) => handleAbrirMenu(e)}>
                             <MoreVertIcon/>
                         </IconButton>
@@ -97,4 +97,4 @@ const PostCard = ({post, onEdit, onDelete}) => {
     );
 };
 
-export default PostCard;
+export default memo(PostCard);

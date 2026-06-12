@@ -1,6 +1,8 @@
-import {useState} from "react";
+import {useState, useEffect, useCallback} from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {Container, Grid, Typography, Button, Box} from "@mui/material";
 import {useAuth} from "../context/AuthContext";
+
 // Importamos los componentes hijos
 import PostCard from "../components/PostCard";
 import ModalFormularioPost from "../components/modals/ModalFormularioPost";
@@ -15,13 +17,18 @@ const estadoInicialPost = {
 const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
 
     const {usuario} = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { id } = useParams();
 
-    // Estados para el Modal y el formulario
-    const [modalAbierto, setModalAbierto] = useState(false);
+    // Deducir el estado de los modales en base a la URL actual
+    const esCrear = location.pathname === '/crear-post';
+    const esEditar = location.pathname.startsWith('/editar-post/');
+    const modalAbierto = esCrear || esEditar;
+    const editandoId = esEditar ? Number(id) : null;
+
+    // Estado local solo para los datos del formulario que el usuario tipeará
     const [nuevoPost, setNuevoPost] = useState(estadoInicialPost);
-
-    // Estado adicional para saber si estamos editando (guarda el ID) o creando (null)
-    const [editandoId, setEditandoId] = useState(null);
 
     // Estado para controlar el menú desplegable de opciones en las tarjetas
     const [postSeleccionado, setPostSeleccionado] = useState(null);
@@ -32,25 +39,30 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
     // Estado para controlar el Dialog de restablecimiento del blog
     const [dialogoRestaurarAbierto, setDialogoRestaurarAbierto] = useState(false);
 
+    // Efecto para cargar los datos en el form si estamos en modo Edición
+    useEffect(() => {
+        if (esEditar && editandoId) {
+            const postAEditar = posts.find(p => p.id === editandoId);
+            if (postAEditar) {
+                setNuevoPost({ titulo: postAEditar.titulo, descripcion: postAEditar.descripcion, img: postAEditar.img });
+            } else {
+                navigate('/posts'); // Redirigir si el ID no existe
+            }
+        } else if (esCrear) {
+            setNuevoPost(estadoInicialPost);
+        }
+    }, [esEditar, esCrear, editandoId, posts, navigate]);
+
     // Manejo del Modal de Creación/Edición
-    const handleAbrirModalCrear = () => {
-        setEditandoId(null); // Aseguramos que es modo "Crear"
-        // Limpiar el formulario al cerrar
-        setNuevoPost(estadoInicialPost);
-        setModalAbierto(true);
-    };
+    const handleAbrirModalCrear = () => navigate('/crear-post');
 
-    const handlePrepararEdicion = (post) => {
-        setNuevoPost({titulo: post.titulo, descripcion: post.descripcion, img: post.img});
-        setEditandoId(post.id);
-        setModalAbierto(true);
-    };
+    // Envuelve las funciones que se pasan como props a PostCard con useCallback
+    const handlePrepararEdicion = useCallback((post) => {
+        navigate(`/editar-post/${post.id}`);
+    }, [navigate]); // navigate es una dependencia externa
 
-    const handleCerrarModal = () => {
-        setModalAbierto(false);
-        setNuevoPost(estadoInicialPost);
-        setEditandoId(null);
-    };
+    // Al cancelar o terminar la acción, simplemente "volvemos" a /posts
+    const handleCerrarModal = () => navigate('/posts');
 
     // Unificamos Crear y Editar en una sola función lógica
     const handleGuardarPost = () => {
@@ -59,8 +71,12 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
             setPosts(posts.map(post => post.id === editandoId ? {...post, ...nuevoPost} : post));
         } else {
             // Lógica de CREAR (Create)
+            const nuevoId = posts.length > 0
+                ? Math.max(...posts.map(p => p.id)) + 1
+                : 1;
+
             const postCreado = {
-                id: Date.now(), // Genera un ID único simulado
+                id: nuevoId, // Usamos el nuevo ID calculado
                 titulo: nuevoPost.titulo || "Post sin titulo",
                 descripcion: nuevoPost.descripcion || "Sin descripción",
                 img: nuevoPost.img || "Sin imágen"
@@ -69,14 +85,13 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
             // a la izquierda
             setPosts([postCreado, ...posts]);
         }
-        handleCerrarModal();
+        navigate('/posts'); // Volvemos a la ruta normal
     };
 
-    // Manejo de Eliminación
-    const handlePrepararEliminacion = (post) => {
+    const handlePrepararEliminacion = useCallback((post) => {
         setPostSeleccionado(post);
         setDialogoEliminarAbierto(true);
-    };
+    }, []); // No tiene dependencias que cambien, el array queda vacío
 
     const handleConfirmarEliminar = () => {
         // Solo filtramos y modificamos el estado global
@@ -101,7 +116,7 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
                 </Typography>
 
                 {/* Botón que respeta el color "primary" definido en el ThemeProvider */}
-                {usuario && (
+                {usuario?.rol === 'admin' && (
                     <Button variant="contained" color="primary" onClick={handleAbrirModalCrear}>
                         + Crear Nuevo Post
                     </Button>
@@ -124,7 +139,7 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
             </Grid>
 
             {/* Botón para restablecer el blog */}
-            {usuario && (
+            {usuario?.rol === 'admin' && (
                 <Box sx={{mt: 6, mb: 2, textAlign: 'center'}}>
                     <Button variant="outlined" color="error" onClick={() => setDialogoRestaurarAbierto(true)}>
                         Restablecer Blog
@@ -139,7 +154,7 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
                 alGuardar={handleGuardarPost}
                 datosPost={nuevoPost}
                 setDatosPost={setNuevoPost}
-                esEdicion={Boolean(editandoId)}
+                esEdicion={esEditar}
             />
 
             <ModalConfirmacion

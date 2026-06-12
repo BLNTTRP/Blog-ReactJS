@@ -10,6 +10,8 @@ import {postsDeFabrica} from "./data/postsIniciales";
 import {AuthProvider} from "./context/AuthContext";
 import RutaProtegida from "./components/RutaProtegida";
 import Login from "./pages/Login";
+import Registro from "./pages/Registro";
+import AccesoDenegado from "./pages/AccesoDenegado.jsx";
 
 // Importamos Layouts y Páginas
 import Header from "./components/Header";
@@ -54,30 +56,38 @@ const App = () => {
 
                     <main style={{flexGrow: 1}}>
                         <Routes>
+                            {/* Rutas Públicas */}
                             <Route path="/" element={<Inicio/>}/>
-                            {/* Pasamos 'posts', 'setPosts' y 'restaurarBlog' como props */}
-                            <Route path="/posts" element={<ListaDePosts posts={posts} setPosts={setPosts}
-                                                                        restaurarBlog={restaurarBlog}/>}/>
-                            {/* Ruta dinámica para leer un post especifico */}
-                            {/* Pasamos 'posts' para que el detalle pueda encontrar el adecuado */}
-                            <Route path="/post/:id" element={<DetalleDePost posts={posts}/>}/>
                             <Route path="/acerca-de" element={<AcercaDe/>}/>
                             <Route path="/login" element={<Login/>}/>
+                            <Route path="/registro" element={<Registro/>}/>
+                            <Route path="/acceso-denegado" element={<AccesoDenegado/>}/>
 
-                            {/* Ruta protegida de prueba */}
+                            {/* Ruta de Lista de Posts Pública */}
+                            <Route path="/posts" element={<ListaDePosts posts={posts} setPosts={setPosts}
+                                                                        restaurarBlog={restaurarBlog}/>}/>
+                            <Route path="/post/:id" element={<DetalleDePost posts={posts}/>}/>
+
+
+                            {/* Rutas protegidas que disparan modales sobre la Lista de Posts */}
                             <Route
-                                path="/panel-admin"
+                                path="/crear-post"
                                 element={
                                     <RutaProtegida>
-                                        <div style={{textAlign: 'center', padding: '50px'}}>
-                                            <h2>Panel de Administración</h2>
-                                            <p>Si estás viendo esto es porque lograste iniciar sesión exitosamente!</p>
-                                        </div>
+                                        <ListaDePosts posts={posts} setPosts={setPosts} restaurarBlog={restaurarBlog} />
                                     </RutaProtegida>
                                 }
                             />
 
-                            <Route path="*" element={<h2>Error 404 - Página no encontrada</h2>}/>
+                            <Route
+                                path="editar-post/:id"
+                                element={
+                                    <RutaProtegida>
+                                        <ListaDePosts posts={posts} setPosts={setPosts} restaurarBlog={restaurarBlog} />
+                                    </RutaProtegida>
+                                }
+                            />
+                            <Route path="*" element={<h2 style={{textAlign: 'center', marginTop: '50px'}}>Error 404 - Página no encontrada</h2>}/>
                         </Routes>
                     </main>
 

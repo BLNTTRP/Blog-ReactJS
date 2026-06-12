@@ -1,6 +1,6 @@
 export const postsDeFabrica = [
     {
-        id: 1,
+        id: 3,
         titulo: "Aprende React",
         descripcion: "Guia paso a paso...",
         img: "https://picsum.photos/400/200?random=1"
@@ -12,7 +12,7 @@ export const postsDeFabrica = [
         img: "https://picsum.photos/400/200?random=2"
     },
     {
-        id: 3,
+        id: 1,
         titulo: "Material UI",
         descripcion: "Estilos rápidos...",
         img: "https://picsum.photos/400/200?random=3"

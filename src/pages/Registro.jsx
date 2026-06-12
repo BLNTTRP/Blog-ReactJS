@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from "react-router-dom";
-import { useAuth } from '../context/AuthContext.jsx'
-import {
-    Container, Paper, Typography, TextField, Button, Box, Alert, Link
-} from "@mui/material";
+import { useAuth } from "../context/AuthContext.jsx";
+import { Container, Paper, Typography, TextField, Button, Box, Alert, Link } from "@mui/material";
 
-const Login = () => {
-    const [credenciales, setCredenciales] = useState({ email: '', password: '' });
+const Registro = () => {
+    const [credenciales, setCredenciales] = useState({
+        nombre: '',
+        email: '',
+        password: ''
+    });
     const [error, setError] = useState('');
+    const [exito, setExito] = useState(false);
 
-    const { iniciarSesion } = useAuth();
+    const { registrarUsuario } = useAuth();
     const navigate = useNavigate();
 
     const manejarCambio = (e) => {
@@ -22,12 +25,18 @@ const Login = () => {
 
     const manejarEnvio = (e) => {
         e.preventDefault();
-        const loginExitoso = iniciarSesion(credenciales);
+        setError('');
 
-        if (loginExitoso) {
-            navigate('/posts');
+        const resultado = registrarUsuario(credenciales);
+
+        if (resultado.exito) {
+            setExito(true);
+            // Redirigir al login tras 2 segundos para que el usuario pueda iniciar sesión
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
         } else {
-            setError('Credenciales incorrectas. Verifica tu email o contraseña.');
+            setError(resultado.mensaje);
         }
     };
 
@@ -35,12 +44,24 @@ const Login = () => {
         <Container maxWidth="xs" sx={{ mt: 8, mb: 8 }}>
             <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography variant="h4" component="h1" gutterBottom>
-                    Iniciar Sesión
+                    Crear Cuenta
                 </Typography>
 
                 {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
+                {error && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>Registro exitoso. Redirigiendo al login...</Alert>}
 
                 <Box component="form" onSubmit={manejarEnvio} sx={{ width: '100%' }}>
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        label="Nombre Completo"
+                        name="nombre"
+                        type="text"
+                        value={credenciales.nombre}
+                        onChange={manejarCambio}
+                        autoFocus
+                    />
                     <TextField
                         margin="normal"
                         required
@@ -50,7 +71,6 @@ const Login = () => {
                         type="email"
                         value={credenciales.email}
                         onChange={manejarCambio}
-                        autoFocus
                     />
                     <TextField
                         margin="normal"
@@ -62,18 +82,13 @@ const Login = () => {
                         value={credenciales.password}
                         onChange={manejarCambio}
                     />
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        sx={{ mt: 3, mb: 2 }}
-                    >
-                        Ingresar
+                    <Button type="submit" fullWidth variant="contained" color="primary" sx={{ mt: 3, mb: 2 }}>
+                        Registrarse
                     </Button>
+
                     <Box sx={{ textAlign: 'center', mt: 2 }}>
                         <Typography variant="body2">
-                            ¿No tienes una cuenta? <Link component={RouterLink} to="/registro" underline="hover">Regístrate aquí</Link>
+                            ¿Ya tienes una cuenta? <Link component={RouterLink} to="/login" underline="hover">Inicia Sesión aquí</Link>
                         </Typography>
                     </Box>
                 </Box>
@@ -82,4 +97,4 @@ const Login = () => {
     );
 };
 
-export default Login;
+export default Registro;
