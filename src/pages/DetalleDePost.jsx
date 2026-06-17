@@ -1,6 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { Container, Typography, Button, Box, Card, CardMedia, CardContent } from "@mui/material";
 
+import SeccionComentarios from "../components/SeccionComentarios";
+
 const DetalleDePost = ({ posts }) => {
     // Extraer el ID dinámico de la URL
     const { id } = useParams();
@@ -36,6 +38,10 @@ const DetalleDePost = ({ posts }) => {
                     </Typography>
                 </CardContent>
             </Card>
+
+            {/* Sección de comentarios */}
+            <SeccionComentarios postId={post.id} />
+
             <Box sx={{ mt: 3, textAlign: 'center' }}>
                 <Button component={Link} to="/posts" variant="contained" color="primary">
                     Volver al Blog
