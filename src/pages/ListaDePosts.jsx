@@ -3,6 +3,9 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {Container, Grid, Typography, Button, Box} from "@mui/material";
 import {useAuth} from "../context/AuthContext";
 
+// Importamos nuestra base de datos Dexie
+import db from "../db/database";
+
 // Importamos los componentes hijos
 import PostCard from "../components/PostCard";
 import ModalFormularioPost from "../components/modals/ModalFormularioPost";
@@ -14,7 +17,7 @@ const estadoInicialPost = {
     img: ''
 };
 
-const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
+const ListaDePosts = ({posts, restaurarBlog}) => {
 
     const {usuario} = useAuth();
     const navigate = useNavigate();
@@ -45,13 +48,12 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
             const postAEditar = posts.find(p => p.id === editandoId);
             if (postAEditar) {
                 setNuevoPost({ titulo: postAEditar.titulo, descripcion: postAEditar.descripcion, img: postAEditar.img });
-            } else {
-                navigate('/posts'); // Redirigir si el ID no existe
             }
+            // Eliminamos la redirección forzada aquí para evitar bugs de renderizado rápido
         } else if (esCrear) {
             setNuevoPost(estadoInicialPost);
         }
-    }, [esEditar, esCrear, editandoId, posts, navigate]);
+    }, [esEditar, esCrear, editandoId, posts]);
 
     // Manejo del Modal de Creación/Edición
     const handleAbrirModalCrear = () => navigate('/crear-post');
@@ -64,28 +66,20 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
     // Al cancelar o terminar la acción, simplemente "volvemos" a /posts
     const handleCerrarModal = () => navigate('/posts');
 
-    // Unificamos Crear y Editar en una sola función lógica
-    const handleGuardarPost = () => {
+    // LÓGICA DE GUARDADO ASÍNCRONA CON DEXIE
+    const handleGuardarPost = async () => {
         if (editandoId) {
-            // Lógica de ACTUALIZAR (Update)
-            setPosts(posts.map(post => post.id === editandoId ? {...post, ...nuevoPost} : post));
+            // ACTUALIZAR (Update)
+            await db.posts.update(editandoId, nuevoPost);
         } else {
-            // Lógica de CREAR (Create)
-            const nuevoId = posts.length > 0
-                ? Math.max(...posts.map(p => p.id)) + 1
-                : 1;
-
-            const postCreado = {
-                id: nuevoId, // Usamos el nuevo ID calculado
+            // CREAR (Create) - Dexie genera el ID automáticamente por el "++id" del esquema
+            await db.posts.add({
                 titulo: nuevoPost.titulo || "Post sin titulo",
                 descripcion: nuevoPost.descripcion || "Sin descripción",
                 img: nuevoPost.img || "Sin imágen"
-            };
-            // Agregamos el post al principio del arreglo para que aparezca
-            // a la izquierda
-            setPosts([postCreado, ...posts]);
+            });
         }
-        navigate('/posts'); // Volvemos a la ruta normal
+        navigate('/posts');
     };
 
     const handlePrepararEliminacion = useCallback((post) => {
@@ -93,11 +87,13 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
         setDialogoEliminarAbierto(true);
     }, []); // No tiene dependencias que cambien, el array queda vacío
 
-    const handleConfirmarEliminar = () => {
-        // Solo filtramos y modificamos el estado global
-        setPosts(posts.filter(post => post.id !== postSeleccionado.id));
-        setDialogoEliminarAbierto(false);
-        setPostSeleccionado(null);
+    // LÓGICA DE ELIMINACIÓN ASÍNCRONA CON DEXIE
+    const handleConfirmarEliminar = async () => {
+        if (postSeleccionado) {
+            await db.posts.delete(postSeleccionado.id);
+            setDialogoEliminarAbierto(false);
+            setPostSeleccionado(null);
+        }
     };
 
     // Manejo de Restauración
@@ -151,7 +147,7 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
             <ModalFormularioPost
                 abierto={modalAbierto}
                 alCerrar={handleCerrarModal}
-                alGuardar={handleGuardarPost}
+                alGuardar={handleGuardarPost} // Pasamos la función asíncrona
                 datosPost={nuevoPost}
                 setDatosPost={setNuevoPost}
                 esEdicion={esEditar}
@@ -160,9 +156,9 @@ const ListaDePosts = ({posts, setPosts, restaurarBlog}) => {
             <ModalConfirmacion
                 abierto={dialogoEliminarAbierto}
                 alCerrar={() => setDialogoEliminarAbierto(false)}
-                alConfirmar={handleConfirmarEliminar}
+                alConfirmar={handleConfirmarEliminar} // Pasamos la función asíncrona
                 titulo="Confirmar eliminación"
-                mensaje={`Estás seguro de que deseas eliminar permanentemente el post: "${postSeleccionado?.titulo}"? Esta acción no se puede deshacer.`}
+                mensaje={`¿Estás seguro de que deseas eliminar permanentemente el post: "${postSeleccionado?.titulo}"? Esta acción no se puede deshacer.`}
                 textoBotonConfirmar="Eliminar Post"
             />
 

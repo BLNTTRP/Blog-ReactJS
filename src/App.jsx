@@ -1,6 +1,10 @@
-import {useState, useEffect} from "react";
+import {useEffect} from "react";
 import {Routes, Route} from "react-router-dom";
 import {ThemeProvider, CssBaseline} from "@mui/material";
+
+// Importamos Dexie y nuestra DB
+import { useLiveQuery } from "dexie-react-hooks";
+import db from "./db/database";
 
 // Importamos las configuraciones externas
 import {temaBlog} from "./theme/theme";
@@ -23,23 +27,15 @@ import AcercaDe from "./pages/AcercaDe";
 
 
 const App = () => {
-    // Inicialización "perezosa" (lazy initialization) del estado
-    const [posts, setPosts] = useState(() => {
-        const postsGuardados = localStorage.getItem('blog_posts');
-        if (postsGuardados) {
-            return JSON.parse(postsGuardados);
-        }
-        return postsDeFabrica;
-    });
+    // MAGIA DE DEXIE: useLiveQuery mantiene 'posts' sincronizado con IndexedDB.
+    // Usamos reverse() para que los posts más nuevos aparezcan primero.
+    // Agregamos || [] para que el estado inicial no sea undefined mientras carga.
+    const posts = useLiveQuery(() => db.posts.orderBy('id').reverse().toArray(), []) || [];
 
-    // Cada vez que el estado 'posts' cambie, lo guardamos en localStorage
-    useEffect(() => {
-        localStorage.setItem('blog_posts', JSON.stringify(posts));
-    }, [posts]);
-
-    // Función para devolver el blog a su estado inicial
-    const restaurarBlog = () => {
-        setPosts(postsDeFabrica);
+    // Función ASÍNCRONA para devolver el blog a su estado inicial usando Dexie
+    const restaurarBlog = async () => {
+        await db.posts.clear(); // Vaciamos la tabla de posts
+        await db.posts.bulkAdd(postsDeFabrica); // Insertamos los de fábrica
     };
 
     return (
@@ -64,8 +60,7 @@ const App = () => {
                             <Route path="/acceso-denegado" element={<AccesoDenegado/>}/>
 
                             {/* Ruta de Lista de Posts Pública */}
-                            <Route path="/posts" element={<ListaDePosts posts={posts} setPosts={setPosts}
-                                                                        restaurarBlog={restaurarBlog}/>}/>
+                            <Route path="/posts" element={<ListaDePosts posts={posts} restaurarBlog={restaurarBlog}/>}/>
                             <Route path="/post/:id" element={<DetalleDePost posts={posts}/>}/>
 
 
@@ -74,7 +69,7 @@ const App = () => {
                                 path="/crear-post"
                                 element={
                                     <RutaProtegida>
-                                        <ListaDePosts posts={posts} setPosts={setPosts} restaurarBlog={restaurarBlog} />
+                                        <ListaDePosts posts={posts} restaurarBlog={restaurarBlog} />
                                     </RutaProtegida>
                                 }
                             />
@@ -83,7 +78,7 @@ const App = () => {
                                 path="editar-post/:id"
                                 element={
                                     <RutaProtegida>
-                                        <ListaDePosts posts={posts} setPosts={setPosts} restaurarBlog={restaurarBlog} />
+                                        <ListaDePosts posts={posts} restaurarBlog={restaurarBlog} />
                                     </RutaProtegida>
                                 }
                             />

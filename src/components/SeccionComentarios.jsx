@@ -1,22 +1,26 @@
-import { useState, useEffect } from 'react';
 import { Box, Typography, Divider, Alert } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import FormularioComentarios from './FormularioComentarios';
 import Comentario from './Comentario';
 
+// Importamos Dexie y nuestra DB
+import { useLiveQuery } from "dexie-react-hooks";
+import db from "../db/database";
+
 const SeccionComentarios = ({ postId }) => {
     const { usuario } = useAuth();
-    const [comentarios, setComentarios] = useState([]);
 
-    // Cargar comentarios desde localStorage correspondientes a este post
-    useEffect(() => {
-        const guardados = JSON.parse(localStorage.getItem('comentarios_blog')) || [];
-        setComentarios(guardados.filter(c => c.postId === postId));
-    }, [postId]);
+    // MAGIA DE DEXIE: Obtenemos solo los comentarios de este post en tiempo real
+    // Usamos el índice postId que definimos en database.js
+    const comentarios = useLiveQuery(
+        () => db.comentarios.where({ postId: postId }).toArray(),
+        [postId] // Dependencia: si cambia el post, re-ejecuta la query
+    ) || [];
 
     // Lógica para guardar un comentario nuevo (principal o respuesta)
-    const agregarComentario = (texto, parentId = null) => {
+    // GUARDAR ASÍNCRONO
+    const agregarComentario = async (texto, parentId = null) => {
         const nuevoComentario = {
             id: Date.now(),
             postId: postId,
@@ -29,40 +33,27 @@ const SeccionComentarios = ({ postId }) => {
             editado: false
         };
 
-        const todosLosComentarios = JSON.parse(localStorage.getItem('comentarios_blog')) || [];
-        const actualizados = [...todosLosComentarios, nuevoComentario];
-        localStorage.setItem('comentarios_blog', JSON.stringify(actualizados));
-
-        setComentarios(actualizados.filter(c => c.postId === postId));
+        // Dexie generará el 'id' automáticamente
+        await db.comentarios.add(nuevoComentario);
     };
 
     // Función para eliminar un comentario
-    const eliminarComentario = (idComentario) => {
-        const todosLosComentarios = JSON.parse(localStorage.getItem('comentarios_blog')) || [];
-
-        const actualizados = todosLosComentarios.filter(c => c.id !== idComentario && c.parentId !== idComentario);
-
-        localStorage.setItem('comentarios_blog', JSON.stringify(actualizados));
-        setComentarios(actualizados.filter(c => c.postId === postId));
+    // ELIMINAR ASÍNCRONO (Comentario y sus respuestas)
+    const eliminarComentario = async (idComentario) => {
+        // En Dexie podemos eliminar el comentario padre y buscar si tiene respuestas (parentId === idComentario)
+        // para eliminarlas también.
+        await db.comentarios.where('id').equals(idComentario)
+              .or('parentId').equals(idComentario)
+              .delete();
     };
 
     // Función para editar un comentario
-    const editarComentario = (idComentario, nuevoTexto) => {
-        const todosLosComentarios = JSON.parse(localStorage.getItem('comentarios_blog')) || [];
-
-        const actualizados = todosLosComentarios.map(c => {
-            if (c.id === idComentario) {
-                return {
-                    ...c,
-                    texto: nuevoTexto,
-                    editado: true
-                };
-            }
-            return c;
+    // EDITAR ASÍNCRONO
+    const editarComentario = async (idComentario, nuevoTexto) => {
+        await db.comentarios.update(idComentario, {
+            texto: nuevoTexto,
+            editado: true
         });
-
-        localStorage.setItem('comentarios_blog', JSON.stringify(actualizados));
-        setComentarios(actualizados.filter(c => c.postId === postId));
     };
 
     // Filtramos para renderizar primero solo los comentarios "raíz"

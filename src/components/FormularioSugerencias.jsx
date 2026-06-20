@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Box, TextField, Button, Typography, Paper, Alert } from '@mui/material';
 
+// Importamos nuestra base de datos Dexie
+import db from '../db/database';
+
 const FormularioSugerencias = () => {
     // Estados para los campos del formulario
     const [datosFormulario, setDatosFormulario] = useState({
@@ -22,28 +25,25 @@ const FormularioSugerencias = () => {
     };
 
     // Función que se ejecuta al enviar el formulario
-    const manejarEnvio = (e) => {
+    // AHORA ES ASÍNCRONA: Guardamos la sugerencia en Dexie
+    const manejarEnvio = async (e) => {
         e.preventDefault();
 
-        // Obtener sugerencias anteriores del localStorage (si existen) o inicializar un array vacío
-        const sugerenciasGuardadas = JSON.parse(localStorage.getItem('sugerencias_blog')) || [];
-
-        // Crear el nuevo objeto de sugerencia con un ID único y la fecha actual
+        // Creamos el objeto a insertar. Dexie creará el 'id' automáticamente.
         const nuevaSugerencia = {
-            id: Date.now(),
             fecha: new Date().toLocaleDateString(),
-            ...datosFormulario
+            nombre: datosFormulario.nombre,
+            correo: datosFormulario.correo,
+            descripcion: datosFormulario.descripcion
         };
 
-        // Agregar la nueva sugerencia al array y guardarlo en localStorage
-        const nuevasSugerencias = [...sugerenciasGuardadas, nuevaSugerencia];
-        localStorage.setItem('sugerencias_blog', JSON.stringify(nuevasSugerencias));
+        // Insertamos en la tabla sugerencias
+        await db.sugerencias.add(nuevaSugerencia);
 
-        // Limpiar el formulario y mostrar el mensaje de éxito
+        // Limpiamos el formulario y mostramos éxito
         setDatosFormulario({ nombre: '', correo: '', descripcion: '' });
         setMensajeExito(true);
 
-        // Ocultar el mensaje de éxito después de 3 segundos
         setTimeout(() => {
             setMensajeExito(false);
         }, 3000);

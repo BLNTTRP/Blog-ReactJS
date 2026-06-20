@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import db from '../db/database'; // Importamos nuestra base de datos
 
 // Crear el contexto
 const AuthContext = createContext();
@@ -7,7 +8,7 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    // Inicialización perezosa: Buscamos si ya hay un usuario guardado
+    // Mantenemos la sesión activa en el estado y en localStorage
     const [usuario, setUsuario] = useState(() => {
         const usuarioGuardado = localStorage.getItem('usuario_blog');
         if (usuarioGuardado) {
@@ -26,17 +27,17 @@ export const AuthProvider = ({ children }) => {
     }, [usuario])
 
     // Función para registrar un visitante
-    const registrarUsuario = (datos) => {
-        // Evitar que se registren con el correo del admin
+    // AHORA ES ASÍNCRONA: Buscar y agregar en Dexie
+    const registrarUsuario = async (datos) => {
         const adminEmail = 'admin@blog.com';
         if (datos.email === adminEmail) {
             return { exito: false, mensaje: 'El correo ya se encuentra registrado.' };
         }
 
-        const usuariosRegistrados = JSON.parse(localStorage.getItem('usuarios_registrados')) || [];
+        // Buscamos si el email ya existe en la tabla usuarios
+        const usuarioExistente = await db.usuarios.get(datos.email);
 
-        // Verificar si el email ya existe
-        if (usuariosRegistrados.some(u => u.email === datos.email)) {
+        if (usuarioExistente) {
             return { exito: false, mensaje: 'El correo ya se encuentra registrado.' };
         }
 
@@ -44,39 +45,34 @@ export const AuthProvider = ({ children }) => {
             nombre: datos.nombre,
             email: datos.email,
             password: datos.password,
-            rol: 'visitante' // Asignamos el rol por defecto
+            rol: 'visitante'
         };
 
-        usuariosRegistrados.push(nuevoUsuario);
-        localStorage.setItem('usuarios_registrados', JSON.stringify(usuariosRegistrados));
+        // Insertamos el nuevo usuario en Dexie
+        await db.usuarios.add(nuevoUsuario);
         return { exito: true };
     };
 
-    // Iniciar sesión verifica el localStorage
-    const iniciarSesion = (datos) => {
-        // Credenciales hardcodeadas del administrador
+    // Función para iniciar sesión
+    // AHORA ES ASÍNCRONA: Validar contra Dexie
+    const iniciarSesion = async (datos) => {
         const adminEmail = 'admin@blog.com';
         const adminPassword = '1234';
 
-        // Verificamos si es el admin
         if (datos.email === adminEmail && datos.password === adminPassword) {
             setUsuario({ nombre: 'Admin', email: datos.email, rol: 'admin' });
-            return true; // Éxito
+            return true;
         }
 
-        // Verificamos si es un visitante registrado en localStorage
-        const usuariosRegistrados = JSON.parse(localStorage.getItem('usuarios_registrados')) || [];
-        const usuarioEncontrado = usuariosRegistrados.find(
-            u => u.email === datos.email && u.password === datos.password
-        );
+        // Buscamos al usuario en Dexie por su email (nuestra primary key)
+        const usuarioEncontrado = await db.usuarios.get(datos.email);
 
-        if (usuarioEncontrado) {
-            // No guardamos la contraseña en el estado por seguridad
+        if (usuarioEncontrado && usuarioEncontrado.password === datos.password) {
             setUsuario({ nombre: usuarioEncontrado.nombre, email: usuarioEncontrado.email, rol: usuarioEncontrado.rol });
             return true;
         }
 
-        return false; // Error en credenciales
+        return false;
     };
 
     const cerrarSesion = () => {

@@ -20,9 +20,12 @@ const Login = () => {
         });
     };
 
-    const manejarEnvio = (e) => {
+    // Agregamos async aquí
+    const manejarEnvio = async (e) => {
         e.preventDefault();
-        const loginExitoso = iniciarSesion(credenciales);
+
+        // Agregamos await aquí
+        const loginExitoso = await iniciarSesion(credenciales);
 
         if (loginExitoso) {
             navigate('/posts');

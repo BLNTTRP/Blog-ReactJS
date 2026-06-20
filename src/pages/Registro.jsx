@@ -23,11 +23,13 @@ const Registro = () => {
         });
     };
 
-    const manejarEnvio = (e) => {
+    // Agregamos async aquí
+    const manejarEnvio = async (e) => {
         e.preventDefault();
         setError('');
 
-        const resultado = registrarUsuario(credenciales);
+        // Agregamos await aquí
+        const resultado = await registrarUsuario(credenciales);
 
         if (resultado.exito) {
             setExito(true);
@@ -48,7 +50,7 @@ const Registro = () => {
                 </Typography>
 
                 {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
-                {error && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>Registro exitoso. Redirigiendo al login...</Alert>}
+                {exito && <Alert severity="success" sx={{ width: '100%', mb: 2 }}>Registro exitoso. Redirigiendo al login...</Alert>}
 
                 <Box component="form" onSubmit={manejarEnvio} sx={{ width: '100%' }}>
                     <TextField
